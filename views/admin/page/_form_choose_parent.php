@@ -1,7 +1,11 @@
 <div class="popup_window" id="choose_parent_window" >
     <input type="hidden" value="<?=$model->p_pid ?>" />
     <?php
-    
+    //var_dump(Page::getTreeData());
+    $this->beginWidget('CTreeView', array(
+                'data'=>Page::getTreeData(),
+            ));
+    $this->endWidget();
     ?>
 </div>
 
@@ -32,3 +36,9 @@
         });
     });
 </script>
+<style>
+    .choosen {
+        background-color: red;
+    }
+</style>
+    

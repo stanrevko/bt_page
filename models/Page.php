@@ -193,26 +193,28 @@ class Page extends CActiveRecord {
     public static function getTreeData() {
         $raw_data = Yii::app()->db->createCommand('SELECT p_id, p_pid, p_url, p_uri, p_title FROM page')->queryAll();
 
-        $root = array();
-        $data = array();
-
-        foreach ($raw_data as $row)
-            $data[$row['id']]['text'] = $table ? '<b>' . $row['title'] . '</b>' : CHtml::link('<b>' . $row['title'] . '</b>', array('category/update', 'id' => $row['id']));
-
-        foreach ($raw_data as $row) {
-            if (!$row['parent_id'])
-                $root[] = &$data[$row['id']];
-            else
-                $data[$row['parent_id']]['children'][] = &$data[$row['id']];
+        $page_url_index = array();
+        $page_id_index = array();
+        $page_tree_root = array();
+        
+        foreach ($raw_data as $raw_row) {
+            $raw_row['id'] = $raw_row['p_id'];
+            $raw_row['text'] = $raw_row['p_uri'];
+            $raw_row['htmlOptions'] = array('title'=>$raw_row['p_title']);
+            
+            $page_id_index[$raw_row['p_id']] = $raw_row;
+          //  $page_url_index[$raw_row['p_url']] = $raw_row;
         }
-
-        if ($table) {
-            $content = Yii::app()->db->createCommand('SELECT id, title, category_id FROM ' . $table)->queryAll();
-            if (is_array($content))
-                foreach ($content as $row)
-                    $data[$row['category_id']]['children'][]['text'] = CHtml::link($row['title'], array($contr . '/update', 'id' => $row['id']));
+        
+        foreach ($page_id_index as $row) {
+            if (!$row['p_pid']) {
+                $page_tree_root[] = &$page_id_index[$row['p_id']];
+            } else {
+                $page_id_index[$row['p_pid']]['children'][] = &$page_id_index[$row['p_id']];
+                $page_id_index[$row['p_pid']]['hasChildren'] = true;
+            }
         }
-
-        return array(array('text' => CHtml::link('<b>корень</b>', array($contr . '/index')), 'children' => $root));
+       // var_dump($page_id_index);
+        return $page_tree_root;
     }
 }
