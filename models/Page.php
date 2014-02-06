@@ -24,8 +24,11 @@
  * @property string $p_created
  * @property string $p_updated
  */
-class Page extends CActiveRecord
-{
+class Page extends CActiveRecord {
+    
+    public $parent_url;
+    
+    protected $old_url = '';
 	/**
 	 * Returns the static model of the specified AR class.
 	 * @param string $className active record class name.
@@ -52,11 +55,12 @@ class Page extends CActiveRecord
 		// NOTE: you should only define rules for those attributes that
 		// will receive user inputs.
 		return array(
-			array('p_uri, p_title, p_content, p_status, p_url, p_layout, p_template, p_created, p_updated', 'required'),
+			array('p_uri, p_title, p_content, p_status, p_layout, p_template', 'required'),
 			array('p_status', 'numerical', 'integerOnly'=>true),
 			array('p_urigroup, p_uri, p_title, p_owner_name, meta_title, p_url, p_layout, p_template', 'length', 'max'=>255),
 			array('p_pid, p_owner_id', 'length', 'max'=>10),
 			array('meta_description, meta_keywords, p_css, p_js', 'safe'),
+			array('p_uri, p_urigroup', 'match', 'pattern'=>'/^[a-zA-Z0-9\-_]+$/'),
 			// The following rule is used by search().
 			// Please remove those attributes that should not be searched.
 			array('p_id, p_urigroup, p_uri, p_title, p_content, p_status, p_pid, p_owner_name, p_owner_id, meta_title, meta_description, meta_keywords, p_css, p_js, p_url, p_layout, p_template, p_created, p_updated', 'safe', 'on'=>'search'),
@@ -71,6 +75,8 @@ class Page extends CActiveRecord
 		// NOTE: you may need to adjust the relation name and the related
 		// class name for the relations automatically generated below.
 		return array(
+                    'parent' => array(self::BELONGS_TO, 'Page', 'p_pid'),
+                    'children' => array(self::HAS_MANY, 'Page', 'p_pid'),
 		);
 	}
 
@@ -80,25 +86,25 @@ class Page extends CActiveRecord
 	public function attributeLabels()
 	{
 		return array(
-			'p_id' => 'P',
-			'p_urigroup' => 'P Urigroup',
-			'p_uri' => 'P Uri',
-			'p_title' => 'P Title',
-			'p_content' => 'P Content',
-			'p_status' => 'P Status',
-			'p_pid' => 'P Pid',
-			'p_owner_name' => 'P Owner Name',
-			'p_owner_id' => 'P Owner',
-			'meta_title' => 'Meta Title',
-			'meta_description' => 'Meta Description',
-			'meta_keywords' => 'Meta Keywords',
-			'p_css' => 'P Css',
-			'p_js' => 'P Js',
-			'p_url' => 'P Url',
-			'p_layout' => 'P Layout',
-			'p_template' => 'P Template',
-			'p_created' => 'P Created',
-			'p_updated' => 'P Updated',
+			'p_id' => 'id',
+			'p_urigroup' => 'группа',
+			'p_uri' => 'uri',
+			'p_title' => 'Заголовок',
+			'p_content' => 'Содержание',
+			'p_status' => 'Статус',
+			'p_pid' => 'Родительская страница',
+			'p_owner_name' => 'Класс автора',
+			'p_owner_id' => 'id автора',
+			'meta_title' => 'Title',
+			'meta_description' => 'Description',
+			'meta_keywords' => 'Keywords',
+			'p_css' => 'Css-код',
+			'p_js' => 'Js-код',
+			'p_url' => 'Url',
+			'p_layout' => 'Layout',
+			'p_template' => 'Template',
+			'p_created' => 'Дата создания',
+			'p_updated' => 'Дата изменения',
 		);
 	}
 
@@ -137,4 +143,76 @@ class Page extends CActiveRecord
 			'criteria'=>$criteria,
 		));
 	}
+        
+        public function beforeSave() {
+            if (parent::beforeSave()) {
+                //формируем url
+                $this->old_url = $this->p_url;
+                $parent_url = $this->parent->p_url ? $this->parent->p_url.'/' : '';
+                $group = $this->p_urigroup ? $this->p_urigroup.'/' : '';
+                $this->p_url = $parent_url.$group.$this->p_uri;
+                
+                //проверим уникальность url
+                $sql = 'SELECT COUNT(*) FROM page WHERE p_url="'.$this->p_url.'"';
+                if (!$this->isNewRecord)
+                    $sql .= ' AND p_id<>'.$this->p_id;
+                return !Yii::app()->db->createCommand($sql)->queryScalar();
+            } else {
+                return false;
+            }
+        }
+        
+        public function afterSave() {
+            //если изменился url, обновляем потомков
+            $old_url_len = strlen($this->old_url);
+            $sql = 'UPDATE page SET p_url=CONCAT("'.$this->p_url.'",SUBSTRING(p_url,'.$old_url_len.'))';
+            $sql .= 'WHERE LEFT(url, '.$old_url_len.')="'.$this->old_url.'"';
+            
+        }
+        /*
+        public function getAllChildren() {
+            
+        }*/
+    public function behaviors() {
+        return array(
+            'CTimestampBehavior' => array(
+                'class' => 'zii.behaviors.CTimestampBehavior',
+                'createAttribute' => 'p_created',
+                'updateAttribute' => 'p_updated',
+            )
+        );
+    }
+    
+    public function getStatusArray() {
+        return array(
+            0 => 'не опубликовано',
+            1 => 'опубликовано',
+        );
+    }
+
+    public static function getTreeData() {
+        $raw_data = Yii::app()->db->createCommand('SELECT p_id, p_pid, p_url, p_uri, p_title FROM page')->queryAll();
+
+        $root = array();
+        $data = array();
+
+        foreach ($raw_data as $row)
+            $data[$row['id']]['text'] = $table ? '<b>' . $row['title'] . '</b>' : CHtml::link('<b>' . $row['title'] . '</b>', array('category/update', 'id' => $row['id']));
+
+        foreach ($raw_data as $row) {
+            if (!$row['parent_id'])
+                $root[] = &$data[$row['id']];
+            else
+                $data[$row['parent_id']]['children'][] = &$data[$row['id']];
+        }
+
+        if ($table) {
+            $content = Yii::app()->db->createCommand('SELECT id, title, category_id FROM ' . $table)->queryAll();
+            if (is_array($content))
+                foreach ($content as $row)
+                    $data[$row['category_id']]['children'][]['text'] = CHtml::link($row['title'], array($contr . '/update', 'id' => $row['id']));
+        }
+
+        return array(array('text' => CHtml::link('<b>корень</b>', array($contr . '/index')), 'children' => $root));
+    }
 }
