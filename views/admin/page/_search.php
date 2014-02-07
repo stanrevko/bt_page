@@ -17,11 +17,6 @@
 	</div>
 
 	<div class="row">
-		<?php echo $form->label($model,'p_urigroup'); ?>
-		<?php echo $form->textField($model,'p_urigroup',array('size'=>60,'maxlength'=>255)); ?>
-	</div>
-
-	<div class="row">
 		<?php echo $form->label($model,'p_uri'); ?>
 		<?php echo $form->textField($model,'p_uri',array('size'=>60,'maxlength'=>255)); ?>
 	</div>

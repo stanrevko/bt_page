@@ -57,13 +57,13 @@ class Page extends CActiveRecord {
 		return array(
 			array('p_uri, p_title, p_content, p_status, p_layout, p_template', 'required'),
 			array('p_status', 'numerical', 'integerOnly'=>true),
-			array('p_urigroup, p_uri, p_title, p_owner_name, meta_title, p_url, p_layout, p_template', 'length', 'max'=>255),
+			array('p_uri, p_title, p_owner_name, meta_title, p_url, p_layout, p_template', 'length', 'max'=>255),
 			array('p_pid, p_owner_id', 'length', 'max'=>10),
 			array('meta_description, meta_keywords, p_css, p_js', 'safe'),
-			array('p_uri, p_urigroup', 'match', 'pattern'=>'/^[a-zA-Z0-9\-_]+$/'),
+			array('p_uri', 'match', 'pattern'=>'/^[a-zA-Z0-9\-_]+$/'),
 			// The following rule is used by search().
 			// Please remove those attributes that should not be searched.
-			array('p_id, p_urigroup, p_uri, p_title, p_content, p_status, p_pid, p_owner_name, p_owner_id, meta_title, meta_description, meta_keywords, p_css, p_js, p_url, p_layout, p_template, p_created, p_updated', 'safe', 'on'=>'search'),
+			array('p_id, p_uri, p_title, p_content, p_status, p_pid, p_owner_name, p_owner_id, meta_title, meta_description, meta_keywords, p_css, p_js, p_url, p_layout, p_template, p_created, p_updated', 'safe', 'on'=>'search'),
 		);
 	}
 
@@ -87,7 +87,6 @@ class Page extends CActiveRecord {
 	{
 		return array(
 			'p_id' => 'id',
-			'p_urigroup' => 'группа',
 			'p_uri' => 'uri',
 			'p_title' => 'Заголовок',
 			'p_content' => 'Содержание',
@@ -120,7 +119,6 @@ class Page extends CActiveRecord {
 		$criteria=new CDbCriteria;
 
 		$criteria->compare('p_id',$this->p_id,true);
-		$criteria->compare('p_urigroup',$this->p_urigroup,true);
 		$criteria->compare('p_uri',$this->p_uri,true);
 		$criteria->compare('p_title',$this->p_title,true);
 		$criteria->compare('p_content',$this->p_content,true);
@@ -149,8 +147,7 @@ class Page extends CActiveRecord {
                 //формируем url
                 $this->old_url = $this->p_url;
                 $parent_url = $this->parent->p_url ? $this->parent->p_url.'/' : '';
-                $group = $this->p_urigroup ? $this->p_urigroup.'/' : '';
-                $this->p_url = $parent_url.$group.$this->p_uri;
+                $this->p_url = $parent_url.$this->p_uri;
                 
                 //проверим уникальность url
                 $sql = 'SELECT COUNT(*) FROM page WHERE p_url="'.$this->p_url.'"';
@@ -199,12 +196,13 @@ class Page extends CActiveRecord {
         
         foreach ($raw_data as $raw_row) {
             $raw_row['id'] = $raw_row['p_id'];
-            $raw_row['text'] = $raw_row['p_uri'];
-            $raw_row['htmlOptions'] = array('title'=>$raw_row['p_title']);
+            $raw_row['text'] = '<div class="tree_item" id="id'.$raw_row['p_id'].'" >'.$raw_row['p_title'].'</div>';
+            $raw_row['htmlOptions'] = array('title'=>$raw_row['p_uri']);
             
             $page_id_index[$raw_row['p_id']] = $raw_row;
           //  $page_url_index[$raw_row['p_url']] = $raw_row;
         }
+        
         
         foreach ($page_id_index as $row) {
             if (!$row['p_pid']) {
@@ -216,5 +214,12 @@ class Page extends CActiveRecord {
         }
        // var_dump($page_id_index);
         return $page_tree_root;
+    }
+    
+    public function getParentUrl() {
+        if ($this->p_pid)
+            return $this->parent->p_url;
+        else
+            return null;
     }
 }

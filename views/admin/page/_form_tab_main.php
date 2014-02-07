@@ -1,10 +1,5 @@
 <div class="row" style="display:inline-block;">
-    <?php echo $form->textField($model, 'p_urigroup', array('size' => 20, 'maxlength' => 255, 'placeholder'=>'группа')); ?>
-    <?php echo $form->error($model, 'p_urigroup'); ?>
-</div>
-    
-<div class="row" style="display:inline-block;margin-left:10px;">
-    <?php echo $form->textField($model, 'p_uri', array('size' => 30, 'maxlength' => 255, 'placeholder'=>'uri')); ?>
+    <?php echo $form->textField($model, 'p_uri', array('size' => 50, 'maxlength' => 255, 'placeholder'=>'uri')); ?>
     <?php echo $form->error($model, 'p_uri'); ?>
 </div>
     
@@ -25,7 +20,7 @@
 
 <div class="row" >
     <?php echo $form->hiddenField($model, 'p_pid', array('id' => 'parent_id')); ?>
-    <?php echo $form->textField($model, 'parent_url', array(
+    <?php echo $form->textField($model, 'parentUrl', array(
                                                     'id' => 'parent_url',
                                                     'size' => 60, 
                                                     'maxlength' => 10, 

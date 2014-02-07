@@ -39,7 +39,7 @@ class BtPageModule extends CWebModule {
         }
         
         public function getTemplateArray() {
-            $dir_path = parent::getViewPath().DIRECTORY_SEPARATOR.'front';
+            $dir_path = parent::getViewPath().DIRECTORY_SEPARATOR.'front'.DIRECTORY_SEPARATOR.'page';
             return $this->getPhpFiles($dir_path);
         }
         
@@ -56,7 +56,8 @@ class BtPageModule extends CWebModule {
                         if ($file === false)
                             break;
                         if (substr($file, -4) === '.php') {
-                            $filelist[$file] = substr($file, 0, strlen($file)-4);;
+                            $file_name = substr($file, 0, strlen($file)-4);
+                            $files[$file_name] = $file_name;
                         } elseif ($file != '.' and $file != '..') {
                             $sub_dir_path = $dir_path.DIRECTORY_SEPARATOR.$file;
                             if (is_dir($sub_dir_path)) {
@@ -65,7 +66,8 @@ class BtPageModule extends CWebModule {
                                 if ($sub_entries) {
                                     foreach ($sub_entries as $sub_entry) {
                                         if (substr($sub_entry, -4) === '.php') {
-                                            $sub_files[$file.DIRECTORY_SEPARATOR.$sub_entry] = substr($sub_entry, 0, strlen($sub_entry)-4);
+                                            $file_name = substr($sub_entry, 0, strlen($sub_entry)-4);
+                                            $sub_files[$file_name] = $file_name;
                                         }
                                     }
                                 }
