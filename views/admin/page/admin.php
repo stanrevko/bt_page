@@ -3,13 +3,13 @@
 /* @var $model Page */
 
 $this->breadcrumbs = array(
-    'Pages' => array('index'),
-    'Manage',
+    'Страницы' => array('index'),
+    'Управление',
 );
 
 $this->menu = array(
-    array('label' => 'List Page', 'url' => array('index')),
-    array('label' => 'Create Page', 'url' => array('create')),
+    array('label' => 'Дерево страниц', 'url' => array('treeAdmin')),
+    array('label' => 'Создание страницы', 'url' => array('create')),
 );
 
 Yii::app()->clientScript->registerScript('search', "
@@ -26,7 +26,7 @@ $('.search-form form').submit(function(){
 ");
 ?>
 
-<h1>Manage Pages</h1>
+<h1>Управление страницами</h1>
 
 <?php echo CHtml::link('Advanced Search', '#', array('class' => 'search-button')); ?>
 <div class="search-form" style="display:none">

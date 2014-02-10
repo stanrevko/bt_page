@@ -3,16 +3,16 @@
 /* @var $model Page */
 
 $this->breadcrumbs=array(
-	'Pages'=>array('index'),
-	'Create',
+	'Страницы'=>array('index'),
+	'Создание',
 );
 
 $this->menu=array(
-	array('label'=>'List Page', 'url'=>array('index')),
-	array('label'=>'Manage Page', 'url'=>array('admin')),
+    array('label' => 'Дерево страниц', 'url' => array('treeAdmin')),
+    array('label' => 'Управление страницами', 'url' => array('index')),
 );
 ?>
 
-<h1>Create Page</h1>
+<h1>Создание страницы</h1>
 
 <?php echo $this->renderPartial('_form', array('model'=>$model)); ?>
