@@ -9,7 +9,7 @@ $this->breadcrumbs=array(
 
 $this->menu=array(
     array('label' => 'Дерево страниц', 'url' => array('treeAdmin')),
-    array('label' => 'Управление страницами', 'url' => array('index/index')),
+    array('label' => 'Управление страницами', 'url' => array('index')),
 );
 ?>
 

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This is the model class for table "page".
  *
@@ -26,9 +27,7 @@
 class Page extends CActiveRecord {
     
     public $parent_url;
-    private static  $tableName='{{btpage}}';
-
-
+    
     protected $old_url = '';
 	/**
 	 * Returns the static model of the specified AR class.
@@ -45,7 +44,7 @@ class Page extends CActiveRecord {
 	 */
 	public function tableName()
 	{
-		return self::$tableName;
+		return 'page';
 	}
 
 	/**
@@ -151,7 +150,7 @@ class Page extends CActiveRecord {
                 $this->p_url = $parent_url.$this->p_uri;
                 
                 //проверим уникальность url
-                $sql = 'SELECT COUNT(*) FROM {{'.$this->tableName().'}} WHERE p_url="'.$this->p_url.'"';
+                $sql = 'SELECT COUNT(*) FROM page WHERE p_url="'.$this->p_url.'"';
                 if (!$this->isNewRecord)
                     $sql .= ' AND p_id<>'.$this->p_id;
                 return !Yii::app()->db->createCommand($sql)->queryScalar();
@@ -163,7 +162,7 @@ class Page extends CActiveRecord {
         public function afterSave() {
             //если изменился url, обновляем потомков
             $old_url_len = strlen($this->old_url);
-            $sql = 'UPDATE {{'.$this->tableName().'}} SET p_url=CONCAT("'.$this->p_url.'",SUBSTRING(p_url,'.$old_url_len.'))';
+            $sql = 'UPDATE page SET p_url=CONCAT("'.$this->p_url.'",SUBSTRING(p_url,'.$old_url_len.'))';
             $sql .= 'WHERE LEFT(url, '.$old_url_len.')="'.$this->old_url.'"';
             
         }
@@ -189,7 +188,7 @@ class Page extends CActiveRecord {
     }
 
     public static function getTreeData() {
-        $raw_data = Yii::app()->db->createCommand('SELECT p_id, p_pid, p_url, p_uri, p_title FROM '.  self::$tableName)->queryAll();
+        $raw_data = Yii::app()->db->createCommand('SELECT p_id, p_pid, p_url, p_uri, p_title FROM page')->queryAll();
 
         $page_url_index = array();
         $page_id_index = array();
@@ -198,7 +197,7 @@ class Page extends CActiveRecord {
         foreach ($raw_data as $raw_row) {
             $raw_row['id'] = $raw_row['p_id'];
             $raw_row['text'] = '<div class="tree_item" id="id'.$raw_row['p_id'].'" >'.$raw_row['p_title'].'</div>';
-            //$raw_row['htmlOptions'] = array('title'=>$raw_row['p_uri']);
+            $raw_row['htmlOptions'] = array('title'=>$raw_row['p_uri']);
             
             $page_id_index[$raw_row['p_id']] = $raw_row;
           //  $page_url_index[$raw_row['p_url']] = $raw_row;
