@@ -3,19 +3,18 @@
 /* @var $model Page */
 
 $this->breadcrumbs=array(
-	'Pages'=>array('index'),
+	'Страницы'=>array('index'),
 	$model->p_id=>array('view','id'=>$model->p_id),
-	'Update',
+	'Изменение',
 );
 
 $this->menu=array(
-	array('label'=>'List Page', 'url'=>array('index')),
-	array('label'=>'Create Page', 'url'=>array('create')),
-	array('label'=>'View Page', 'url'=>array('view', 'id'=>$model->p_id)),
-	array('label'=>'Manage Page', 'url'=>array('admin')),
+	array('label'=>'Управление страницами', 'url'=>array('index')),
+	array('label'=>'Создание страницы', 'url'=>array('create')),
+	array('label'=>'Просмотр страницы', 'url'=>array('view', 'id'=>$model->p_id)),
 );
 ?>
 
-<h1>Update Page <?php echo $model->p_id; ?></h1>
+<h1>Изменение страницы <?php echo $model->p_id; ?></h1>
 
 <?php echo $this->renderPartial('_form', array('model'=>$model)); ?>

@@ -1,5 +1,4 @@
 <?php
-
 /**
  * This is the model class for table "page".
  *
@@ -27,7 +26,9 @@
 class Page extends CActiveRecord {
     
     public $parent_url;
-    
+    private static  $tableName='{{btpage}}';
+
+
     protected $old_url = '';
 	/**
 	 * Returns the static model of the specified AR class.
@@ -44,7 +45,7 @@ class Page extends CActiveRecord {
 	 */
 	public function tableName()
 	{
-		return 'page';
+		return self::$tableName;
 	}
 
 	/**
@@ -57,13 +58,13 @@ class Page extends CActiveRecord {
 		return array(
 			array('p_uri, p_title, p_content, p_status, p_layout, p_template', 'required'),
 			array('p_status', 'numerical', 'integerOnly'=>true),
-			array('p_urigroup, p_uri, p_title, p_owner_name, meta_title, p_url, p_layout, p_template', 'length', 'max'=>255),
+			array('p_uri, p_title, p_owner_name, meta_title, p_url, p_layout, p_template', 'length', 'max'=>255),
 			array('p_pid, p_owner_id', 'length', 'max'=>10),
 			array('meta_description, meta_keywords, p_css, p_js', 'safe'),
-			array('p_uri, p_urigroup', 'match', 'pattern'=>'/^[a-zA-Z0-9\-_]+$/'),
+			array('p_uri', 'match', 'pattern'=>'/^[a-zA-Z0-9\-_]+$/'),
 			// The following rule is used by search().
 			// Please remove those attributes that should not be searched.
-			array('p_id, p_urigroup, p_uri, p_title, p_content, p_status, p_pid, p_owner_name, p_owner_id, meta_title, meta_description, meta_keywords, p_css, p_js, p_url, p_layout, p_template, p_created, p_updated', 'safe', 'on'=>'search'),
+			array('p_id, p_uri, p_title, p_content, p_status, p_pid, p_owner_name, p_owner_id, meta_title, meta_description, meta_keywords, p_css, p_js, p_url, p_layout, p_template, p_created, p_updated', 'safe', 'on'=>'search'),
 		);
 	}
 
@@ -87,7 +88,6 @@ class Page extends CActiveRecord {
 	{
 		return array(
 			'p_id' => 'id',
-			'p_urigroup' => 'группа',
 			'p_uri' => 'uri',
 			'p_title' => 'Заголовок',
 			'p_content' => 'Содержание',
@@ -120,7 +120,6 @@ class Page extends CActiveRecord {
 		$criteria=new CDbCriteria;
 
 		$criteria->compare('p_id',$this->p_id,true);
-		$criteria->compare('p_urigroup',$this->p_urigroup,true);
 		$criteria->compare('p_uri',$this->p_uri,true);
 		$criteria->compare('p_title',$this->p_title,true);
 		$criteria->compare('p_content',$this->p_content,true);
@@ -149,11 +148,10 @@ class Page extends CActiveRecord {
                 //формируем url
                 $this->old_url = $this->p_url;
                 $parent_url = $this->parent->p_url ? $this->parent->p_url.'/' : '';
-                $group = $this->p_urigroup ? $this->p_urigroup.'/' : '';
-                $this->p_url = $parent_url.$group.$this->p_uri;
+                $this->p_url = $parent_url.$this->p_uri;
                 
                 //проверим уникальность url
-                $sql = 'SELECT COUNT(*) FROM page WHERE p_url="'.$this->p_url.'"';
+                $sql = 'SELECT COUNT(*) FROM {{'.$this->tableName().'}} WHERE p_url="'.$this->p_url.'"';
                 if (!$this->isNewRecord)
                     $sql .= ' AND p_id<>'.$this->p_id;
                 return !Yii::app()->db->createCommand($sql)->queryScalar();
@@ -165,7 +163,7 @@ class Page extends CActiveRecord {
         public function afterSave() {
             //если изменился url, обновляем потомков
             $old_url_len = strlen($this->old_url);
-            $sql = 'UPDATE page SET p_url=CONCAT("'.$this->p_url.'",SUBSTRING(p_url,'.$old_url_len.'))';
+            $sql = 'UPDATE {{'.$this->tableName().'}} SET p_url=CONCAT("'.$this->p_url.'",SUBSTRING(p_url,'.$old_url_len.'))';
             $sql .= 'WHERE LEFT(url, '.$old_url_len.')="'.$this->old_url.'"';
             
         }
@@ -191,28 +189,38 @@ class Page extends CActiveRecord {
     }
 
     public static function getTreeData() {
-        $raw_data = Yii::app()->db->createCommand('SELECT p_id, p_pid, p_url, p_uri, p_title FROM page')->queryAll();
+        $raw_data = Yii::app()->db->createCommand('SELECT p_id, p_pid, p_url, p_uri, p_title FROM '.  self::$tableName)->queryAll();
 
-        $root = array();
-        $data = array();
-
-        foreach ($raw_data as $row)
-            $data[$row['id']]['text'] = $table ? '<b>' . $row['title'] . '</b>' : CHtml::link('<b>' . $row['title'] . '</b>', array('category/update', 'id' => $row['id']));
-
-        foreach ($raw_data as $row) {
-            if (!$row['parent_id'])
-                $root[] = &$data[$row['id']];
-            else
-                $data[$row['parent_id']]['children'][] = &$data[$row['id']];
+        $page_url_index = array();
+        $page_id_index = array();
+        $page_tree_root = array();
+        
+        foreach ($raw_data as $raw_row) {
+            $raw_row['id'] = $raw_row['p_id'];
+            $raw_row['text'] = '<div class="tree_item" id="id'.$raw_row['p_id'].'" >'.$raw_row['p_title'].'</div>';
+            //$raw_row['htmlOptions'] = array('title'=>$raw_row['p_uri']);
+            
+            $page_id_index[$raw_row['p_id']] = $raw_row;
+          //  $page_url_index[$raw_row['p_url']] = $raw_row;
         }
-
-        if ($table) {
-            $content = Yii::app()->db->createCommand('SELECT id, title, category_id FROM ' . $table)->queryAll();
-            if (is_array($content))
-                foreach ($content as $row)
-                    $data[$row['category_id']]['children'][]['text'] = CHtml::link($row['title'], array($contr . '/update', 'id' => $row['id']));
+        
+        
+        foreach ($page_id_index as $row) {
+            if (!$row['p_pid']) {
+                $page_tree_root[] = &$page_id_index[$row['p_id']];
+            } else {
+                $page_id_index[$row['p_pid']]['children'][] = &$page_id_index[$row['p_id']];
+                $page_id_index[$row['p_pid']]['hasChildren'] = true;
+            }
         }
-
-        return array(array('text' => CHtml::link('<b>корень</b>', array($contr . '/index')), 'children' => $root));
+       // var_dump($page_id_index);
+        return $page_tree_root;
+    }
+    
+    public function getParentUrl() {
+        if ($this->p_pid)
+            return $this->parent->p_url;
+        else
+            return null;
     }
 }
